@@ -1,2 +1,63 @@
 Configuring RAID 1, 5 and 1/0 using non-GUI method on windows servers.
 
+Please run command prompt with administrator privileges and type diskpart and press enter:
+
+DISKPART>List disk
+
+As you can see, there are two local disks available in the system:
+
+Disk 0 – GPT disk with current Windows Installation
+Disk 1 – unallocated disk
+
+Please clean the second disk and convert it into GPT:
+
+DISKPART>Select disk 1
+DISKPART>clean
+DISKPART>Convert GPT
+DISKPART>List part
+ 
+
+Make sure, there’s no partition on disk 2 like reserved partitions. If you found one, please delete it:
+
+DISKPART>Sel part 1
+DISKPART>Delete partition override
+
+Display the list of partitions on first disk (disk 0). Now you need to create the same partitions on your second drive:
+
+DISKPART>Select disk 0
+DISKPART>List part
+There are 4 partitions:
+
+Recovery – 450MB, a recovery partition with WinRE
+System – 99MB, an EFI partition (more about the partition structure on GPT disks)
+Reserved – 16MB, an MSR partition
+Primary – 49GB, a main partition with Windows image
+
+
+Create the same partitions structure on second disk:
+
+DISKPART>Select disk 1
+DISKPART>Create partition primary size=450
+DISKPART>format quick fs=ntfs label="WinRE"
+DISKPART>set id="de94bba4-06d1-4d40-a16a-bfd50179d6ac"
+DISKPART>create partition efi size=99
+DISKPART>create partition msr size=16
+DISKPART>list part
+
+Convert Disks to Dynamic and Create a Mirrored Disk
+Now you need to convert both disks to dynamic:
+
+DISKPART>Select disk 0
+DISKPART>Convert dynamic
+DISKPART>Select disk 1
+DISKPART>Con dyn
+
+
+Create a mirror for a system drive (drive letter C:). Select a partition on Disk 0 and create a mirror for it on Disk 1:
+
+DISKPART>Select volume c
+DISKPART>Add disk=1
+
+You should see note:
+DiskPart succeeded in adding a mirror to the volume
+Open Disk Management and make sure the drive C: synchronization has been started (Resynching). Now you need to wait some times for full synchronization.
